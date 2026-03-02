@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/somya/git-banner-backend/internal/config"
+	"github.com/somya/git-banner-backend/internal/github"
 	"github.com/somya/git-banner-backend/internal/handler"
 	"github.com/somya/git-banner-backend/internal/middleware"
 )
@@ -18,8 +19,12 @@ type Server struct {
 
 // New builds the mux, registers routes, chains middleware, and configures timeouts.
 func New(cfg *config.Config) *Server {
+	ghClient := github.NewClient(cfg.GitHubToken, cfg.CacheTTL)
+	bannerHandler := handler.NewBannerHandler(ghClient)
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", handler.Health)
+	mux.Handle("GET /banner/{username}", bannerHandler)
 
 	chain := middleware.Recovery(middleware.Logger(mux))
 

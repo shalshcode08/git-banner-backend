@@ -4,16 +4,24 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 )
 
 // Config holds all application configuration loaded from environment variables.
 type Config struct {
-	Port string
-	Env  string
+	Port        string
+	Env         string
+	GitHubToken string
+	CacheTTL    time.Duration
 }
 
 // Load reads configuration from environment variables and applies sane defaults.
+// It also loads a .env file from the current working directory if one exists.
 func Load() (*Config, error) {
+	if err := loadDotEnv(".env"); err != nil {
+		return nil, fmt.Errorf("loading .env: %w", err)
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -27,9 +35,22 @@ func Load() (*Config, error) {
 		env = "development"
 	}
 
+	githubToken := os.Getenv("GITHUB_TOKEN")
+
+	cacheTTLSec := 300
+	if v := os.Getenv("CACHE_TTL"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n <= 0 {
+			return nil, fmt.Errorf("invalid CACHE_TTL %q: must be a positive integer (seconds)", v)
+		}
+		cacheTTLSec = n
+	}
+
 	return &Config{
-		Port: port,
-		Env:  env,
+		Port:        port,
+		Env:         env,
+		GitHubToken: githubToken,
+		CacheTTL:    time.Duration(cacheTTLSec) * time.Second,
 	}, nil
 }
 
