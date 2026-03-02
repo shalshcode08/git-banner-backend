@@ -11,24 +11,23 @@ import (
 	"time"
 )
 
-const (
-	restBase    = "https://api.github.com"
-	graphqlBase = "https://api.github.com/graphql"
-)
-
 // Client wraps an HTTP client and handles GitHub REST + GraphQL requests.
 type Client struct {
-	http  *http.Client
-	token string
-	cache *Cache
+	http        *http.Client
+	token       string
+	cache       *Cache
+	restBase    string
+	graphqlBase string
 }
 
 // NewClient creates a Client with the given token and cache TTL.
 func NewClient(token string, cacheTTL time.Duration) *Client {
 	return &Client{
-		http:  &http.Client{Timeout: 10 * time.Second},
-		token: token,
-		cache: NewCache(cacheTTL),
+		http:        &http.Client{Timeout: 10 * time.Second},
+		token:       token,
+		cache:       NewCache(cacheTTL),
+		restBase:    "https://api.github.com",
+		graphqlBase: "https://api.github.com/graphql",
 	}
 }
 
@@ -48,7 +47,7 @@ func (c *Client) FetchUser(ctx context.Context, username string) (*User, error) 
 		return &u, nil
 	}
 
-	url := fmt.Sprintf("%s/users/%s", restBase, username)
+	url := fmt.Sprintf("%s/users/%s", c.restBase, username)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -108,7 +107,7 @@ func (c *Client) fetchTotalStars(ctx context.Context, username string) (int, err
 	total := 0
 	page := 1
 	for {
-		url := fmt.Sprintf("%s/users/%s/repos?per_page=100&page=%d", restBase, username, page)
+		url := fmt.Sprintf("%s/users/%s/repos?per_page=100&page=%d", c.restBase, username, page)
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
 			return 0, err
@@ -158,7 +157,7 @@ func (c *Client) doGraphQL(ctx context.Context, query string, variables map[stri
 		return fmt.Errorf("marshal graphql request: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, graphqlBase, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.graphqlBase, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}

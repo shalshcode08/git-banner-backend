@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -9,13 +10,21 @@ import (
 	"github.com/somya/git-banner-backend/internal/github"
 )
 
-// BannerHandler holds the GitHub client needed to serve banner requests.
-type BannerHandler struct {
-	gh *github.Client
+// Fetcher is the interface satisfied by *github.Client.
+// It is defined here so handlers can be tested with a mock.
+type Fetcher interface {
+	FetchStats(ctx context.Context, username string) (*github.StatsData, error)
+	FetchPinned(ctx context.Context, username string) (*github.PinnedData, error)
+	FetchContributions(ctx context.Context, username string) (*github.ContribData, error)
 }
 
-// NewBannerHandler creates a BannerHandler with the given GitHub client.
-func NewBannerHandler(gh *github.Client) *BannerHandler {
+// BannerHandler holds the Fetcher needed to serve banner requests.
+type BannerHandler struct {
+	gh Fetcher
+}
+
+// NewBannerHandler creates a BannerHandler with the given Fetcher.
+func NewBannerHandler(gh Fetcher) *BannerHandler {
 	return &BannerHandler{gh: gh}
 }
 

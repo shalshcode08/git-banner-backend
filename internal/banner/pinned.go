@@ -88,7 +88,10 @@ func (r *PinnedRenderer) Render(w io.Writer) error {
 	pad := 30
 	gap := 16
 	cardW := (W - pad*2 - gap*(cols-1)) / cols
-	cardH := (H - headerH - pad*2 - gap*(rows-1)) / rows
+	cardH := 0
+	if rows > 0 {
+		cardH = (H - headerH - pad*2 - gap*(rows-1)) / rows
+	}
 
 	cards := make([]repoCard, 0, len(repos))
 	for i, repo := range repos {

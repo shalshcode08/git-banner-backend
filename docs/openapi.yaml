@@ -1,0 +1,156 @@
+openapi: 3.0.3
+info:
+  title: git-banner-backend API
+  description: |
+    Generates SVG banners from GitHub profile data, sized for Twitter or LinkedIn.
+    Banner types: **stats** (profile card), **contributions** (heat-map), **pinned** (pinned repos).
+  version: 1.0.0
+  contact:
+    url: https://github.com/somya/git-banner-backend
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns the service health status. Always responds 200 when the server is running.
+      operationId: getHealth
+      tags:
+        - system
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: ok
+
+  /banner/{username}:
+    get:
+      summary: Generate a GitHub banner SVG
+      description: |
+        Fetches live GitHub data for the given username and renders an SVG banner.
+
+        - **stats** – profile card (followers, following, public repos, stars)
+        - **contributions** – full-year contribution heat-map
+        - **pinned** – up to 6 pinned repositories
+
+        The `pinned` and `contributions` types require `GITHUB_TOKEN` to be configured
+        on the server (GitHub GraphQL API restriction).
+      operationId: getBanner
+      tags:
+        - banner
+      parameters:
+        - name: username
+          in: path
+          required: true
+          description: GitHub username
+          schema:
+            type: string
+            example: octocat
+        - name: type
+          in: query
+          required: false
+          description: Banner type to render
+          schema:
+            type: string
+            enum: [stats, contributions, pinned]
+            default: stats
+          example: stats
+        - name: format
+          in: query
+          required: false
+          description: Target platform canvas size
+          schema:
+            type: string
+            enum: [twitter, linkedin]
+            default: twitter
+          example: twitter
+        - name: theme
+          in: query
+          required: false
+          description: Colour theme
+          schema:
+            type: string
+            enum: [dark, light]
+            default: dark
+          example: dark
+      responses:
+        "200":
+          description: SVG banner image
+          headers:
+            Cache-Control:
+              description: Clients should cache this response
+              schema:
+                type: string
+                example: public, max-age=300
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+              example: |
+                <svg xmlns="http://www.w3.org/2000/svg" width="1500" height="500">...</svg>
+        "400":
+          description: Invalid request parameters (unknown type, missing username)
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalid_type:
+                  summary: Unknown banner type
+                  value: "invalid type: must be stats, contributions, or pinned\n"
+                missing_username:
+                  summary: Missing username
+                  value: "username is required\n"
+        "401":
+          description: GITHUB_TOKEN not configured on the server (required for pinned / contributions)
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example: "GITHUB_TOKEN is required for GraphQL queries (pinned repos and contributions)\n"
+        "404":
+          description: GitHub user not found
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example: "user \"ghost\" not found\n"
+        "502":
+          description: Upstream GitHub API error
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example: "failed to fetch GitHub data: github REST error: 503 Service Unavailable\n"
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [ok]
+          description: Always "ok" when the service is running
+          example: ok
+
+    ErrorResponse:
+      type: string
+      description: Plain-text error message (ends with newline)
+      example: "invalid type: must be stats, contributions, or pinned\n"
+
+tags:
+  - name: system
+    description: Operational endpoints
+  - name: banner
+    description: SVG banner generation
