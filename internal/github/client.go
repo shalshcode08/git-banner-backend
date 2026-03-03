@@ -95,9 +95,15 @@ func (c *Client) FetchStats(ctx context.Context, username string) (*StatsData, e
 		return nil, err
 	}
 
+	avatarDataURI := ""
+	if user.AvatarURL != "" {
+		avatarDataURI = c.fetchAvatarDataURI(ctx, user.AvatarURL)
+	}
+
 	data := StatsData{
-		User:       *user,
-		TotalStars: stars,
+		User:          *user,
+		AvatarDataURI: avatarDataURI,
+		TotalStars:    stars,
 	}
 	c.cache.Set(key, data)
 	return &data, nil

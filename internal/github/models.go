@@ -43,9 +43,10 @@ type ContribData struct {
 
 // StatsData aggregates all data needed for the stats banner.
 type StatsData struct {
-	User         User
-	TotalStars   int
-	TotalCommits int
+	User          User
+	AvatarDataURI string
+	TotalStars    int
+	TotalCommits  int
 }
 
 // PinnedData aggregates all data needed for the pinned banner.

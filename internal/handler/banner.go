@@ -84,7 +84,7 @@ func (h *BannerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			writeGitHubError(w, r, "fetch stats failed", username, err)
 			return
 		}
-		renderer = &banner.StatsRenderer{Data: data, Dims: dims, Colors: colors}
+		renderer = &banner.StatsRenderer{Data: data, Dims: dims, Colors: colors, Theme: theme}
 
 	default:
 		http.Error(w, "invalid type: must be stats, contributions, or pinned", http.StatusBadRequest)
