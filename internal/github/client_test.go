@@ -213,11 +213,11 @@ func TestFetchPinned_Success(t *testing.T) {
 						"pinnedItems": map[string]any{
 							"nodes": []map[string]any{
 								{
-									"name":           "hello-world",
-									"description":    "My first repo",
-									"url":            "https://github.com/octocat/hello-world",
-									"stargazerCount": 42,
-									"forkCount":      5,
+									"name":            "hello-world",
+									"description":     "My first repo",
+									"url":             "https://github.com/octocat/hello-world",
+									"stargazerCount":  42,
+									"forkCount":       5,
 									"primaryLanguage": map[string]any{"name": "Go"},
 								},
 							},

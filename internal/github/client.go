@@ -327,8 +327,15 @@ func (c *Client) FetchContributions(ctx context.Context, username string) (*Cont
 		weeks = append(weeks, ContribWeek{Days: days})
 	}
 
+	user, err := c.FetchUser(ctx, username)
+	avatarURL := ""
+	if err == nil {
+		avatarURL = user.AvatarURL
+	}
+
 	data := ContribData{
 		Login:              username,
+		AvatarURL:          avatarURL,
 		TotalContributions: cal.TotalContributions,
 		Weeks:              weeks,
 	}

@@ -36,6 +36,7 @@ type ContribWeek struct {
 // ContribData holds the full contribution calendar for a user.
 type ContribData struct {
 	Login              string
+	AvatarURL          string
 	TotalContributions int
 	Weeks              []ContribWeek
 }

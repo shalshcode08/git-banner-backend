@@ -68,7 +68,7 @@ func (h *BannerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			writeGitHubError(w, r, "fetch contributions failed", username, err)
 			return
 		}
-		renderer = &banner.ContribRenderer{Data: data, Dims: dims, Colors: colors}
+		renderer = &banner.ContribRenderer{Data: data, Dims: dims, Colors: colors, Theme: theme}
 
 	case "pinned":
 		data, err := h.gh.FetchPinned(r.Context(), username)
