@@ -4,10 +4,21 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/somya/git-banner-backend/internal/banner"
 	"github.com/somya/git-banner-backend/internal/github"
+)
+
+// validUsername matches GitHub's username rules:
+// 1–39 chars, alphanumeric or single interior hyphens, no leading/trailing hyphen.
+var validUsername = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$`)
+
+var (
+	validTypes   = map[string]bool{"stats": true, "contributions": true, "pinned": true}
+	validFormats = map[string]bool{"twitter": true, "linkedin": true}
+	validThemes  = map[string]bool{"dark": true, "light": true}
 )
 
 // Fetcher is the interface satisfied by *github.Client.
@@ -37,24 +48,38 @@ func NewBannerHandler(gh Fetcher) *BannerHandler {
 //	theme  — dark (default) | light
 func (h *BannerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	username := r.PathValue("username")
-	if username == "" {
-		http.Error(w, "username is required", http.StatusBadRequest)
+	if !validUsername.MatchString(username) {
+		http.Error(w, "invalid username", http.StatusBadRequest)
 		return
 	}
 
 	q := r.URL.Query()
+
 	bannerType := q.Get("type")
 	if bannerType == "" {
 		bannerType = "stats"
+	} else if !validTypes[bannerType] {
+		http.Error(w, "invalid type: must be stats, contributions, or pinned", http.StatusBadRequest)
+		return
 	}
-	format := banner.Format(q.Get("format"))
-	if format == "" {
-		format = banner.FormatTwitter
+
+	rawFormat := q.Get("format")
+	if rawFormat == "" {
+		rawFormat = "twitter"
+	} else if !validFormats[rawFormat] {
+		http.Error(w, "invalid format: must be twitter or linkedin", http.StatusBadRequest)
+		return
 	}
-	theme := banner.Theme(q.Get("theme"))
-	if theme == "" {
-		theme = banner.ThemeDark
+	format := banner.Format(rawFormat)
+
+	rawTheme := q.Get("theme")
+	if rawTheme == "" {
+		rawTheme = "dark"
+	} else if !validThemes[rawTheme] {
+		http.Error(w, "invalid theme: must be dark or light", http.StatusBadRequest)
+		return
 	}
+	theme := banner.Theme(rawTheme)
 
 	dims := banner.DimsFor(format)
 	colors := banner.PaletteFor(theme)
@@ -86,9 +111,6 @@ func (h *BannerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		renderer = &banner.StatsRenderer{Data: data, Dims: dims, Colors: colors, Theme: theme}
 
-	default:
-		http.Error(w, "invalid type: must be stats, contributions, or pinned", http.StatusBadRequest)
-		return
 	}
 
 	w.Header().Set("Content-Type", "image/svg+xml")

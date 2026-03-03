@@ -26,7 +26,16 @@ func New(cfg *config.Config) *Server {
 	mux.HandleFunc("GET /health", handler.Health)
 	mux.Handle("GET /banner/{username}", bannerHandler)
 
-	chain := middleware.Recovery(middleware.Logger(mux))
+	// Build middleware chain (outermost first):
+	//   Recovery → SecurityHeaders → RateLimit → Logger → mux
+	var chain http.Handler = mux
+	chain = middleware.Logger(chain)
+	if cfg.RateLimit > 0 {
+		rl := middleware.NewRateLimiter(cfg.RateLimit, time.Minute)
+		chain = middleware.RateLimit(rl)(chain)
+	}
+	chain = middleware.SecurityHeaders(chain)
+	chain = middleware.Recovery(chain)
 
 	return &Server{
 		cfg: cfg,

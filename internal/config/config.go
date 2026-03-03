@@ -13,6 +13,7 @@ type Config struct {
 	Env         string
 	GitHubToken string
 	CacheTTL    time.Duration
+	RateLimit   int // max requests per minute per IP (0 = unlimited)
 }
 
 // Load reads configuration from environment variables and applies sane defaults.
@@ -46,11 +47,21 @@ func Load() (*Config, error) {
 		cacheTTLSec = n
 	}
 
+	rateLimit := 60 // default: 60 req/min per IP
+	if v := os.Getenv("RATE_LIMIT"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 0 {
+			return nil, fmt.Errorf("invalid RATE_LIMIT %q: must be a non-negative integer", v)
+		}
+		rateLimit = n
+	}
+
 	return &Config{
 		Port:        port,
 		Env:         env,
 		GitHubToken: githubToken,
 		CacheTTL:    time.Duration(cacheTTLSec) * time.Second,
+		RateLimit:   rateLimit,
 	}, nil
 }
 
