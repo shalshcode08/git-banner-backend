@@ -3,6 +3,7 @@ package github
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -262,7 +263,12 @@ func (c *Client) FetchPinned(ctx context.Context, username string) (*PinnedData,
 		})
 	}
 
-	data := PinnedData{User: *user, Repos: repos}
+	avatarDataURI := ""
+	if user.AvatarURL != "" {
+		avatarDataURI = c.fetchAvatarDataURI(ctx, user.AvatarURL)
+	}
+
+	data := PinnedData{User: *user, AvatarDataURI: avatarDataURI, Repos: repos}
 	c.cache.Set(key, data)
 	return &data, nil
 }
@@ -329,8 +335,8 @@ func (c *Client) FetchContributions(ctx context.Context, username string) (*Cont
 
 	user, err := c.FetchUser(ctx, username)
 	avatarURL := ""
-	if err == nil {
-		avatarURL = user.AvatarURL
+	if err == nil && user.AvatarURL != "" {
+		avatarURL = c.fetchAvatarDataURI(ctx, user.AvatarURL)
 	}
 
 	data := ContribData{
@@ -341,4 +347,29 @@ func (c *Client) FetchContributions(ctx context.Context, username string) (*Cont
 	}
 	c.cache.Set(key, data)
 	return &data, nil
+}
+
+// fetchAvatarDataURI fetches an image URL and returns a base64 data URI,
+// making the SVG fully self-contained (no external requests required).
+func (c *Client) fetchAvatarDataURI(ctx context.Context, url string) string {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return ""
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+
+	imgData, err := io.ReadAll(io.LimitReader(resp.Body, 256*1024)) // 256 KB cap
+	if err != nil || len(imgData) == 0 {
+		return ""
+	}
+
+	ct := resp.Header.Get("Content-Type")
+	if ct == "" {
+		ct = "image/png"
+	}
+	return "data:" + ct + ";base64," + base64.StdEncoding.EncodeToString(imgData)
 }

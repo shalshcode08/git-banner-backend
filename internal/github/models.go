@@ -50,6 +50,7 @@ type StatsData struct {
 
 // PinnedData aggregates all data needed for the pinned banner.
 type PinnedData struct {
-	User  User
-	Repos []PinnedRepo
+	User          User
+	AvatarDataURI string // base64 data URI, embedded so SVG is self-contained
+	Repos         []PinnedRepo
 }
