@@ -1,0 +1,43 @@
+# fly.toml — Fly.io application configuration
+# https://fly.io/docs/reference/configuration/
+
+app = "git-banner-backend"
+primary_region = "sin"        # Singapore — change to whichever free region is closest to you
+                               # Other options: iad (US-East), lax (US-West), fra (Europe), syd (Australia)
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT      = "8080"
+  ENV       = "production"
+  CACHE_TTL = "300"
+  RATE_LIMIT = "60"
+
+# GITHUB_TOKEN is set as a secret (fly secrets set GITHUB_TOKEN=…) — never in this file.
+
+[http_service]
+  internal_port        = 8080
+  force_https          = true
+  auto_stop_machines   = false   # keep the machine always-on (no cold starts)
+  auto_start_machines  = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type       = "requests"
+    hard_limit = 250
+    soft_limit = 200
+
+[[vm]]
+  size   = "shared-cpu-1x"   # free tier — 256 MB RAM, 1 shared vCPU
+  memory = "256mb"
+
+[checks]
+  [checks.health]
+    grace_period = "5s"
+    interval     = "30s"
+    method       = "GET"
+    path         = "/health"
+    port         = 8080
+    timeout      = "5s"
+    type         = "http"

@@ -1,0 +1,24 @@
+# Git
+.git
+.gitignore
+
+# Local environment — never bake secrets into the image
+.env
+.env.*
+
+# Editor / OS noise
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Test artefacts
+**/*_test.go
+testdata/
+
+# Docs (not needed at runtime)
+docs/
+
+# CI / deployment meta
+fly.toml
+Makefile
