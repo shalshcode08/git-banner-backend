@@ -35,13 +35,6 @@ Generates an SVG banner for the given GitHub username.
 | `format` | query | `twitter` | `twitter` \| `linkedin` |
 | `theme` | query | `dark` | `dark` \| `light` |
 
-**Example URLs**
-```
-/banner/torvalds
-/banner/torvalds?type=contributions&theme=dark
-/banner/torvalds?type=pinned&format=linkedin&theme=light
-```
-
 **Response:** `image/svg+xml` with `Cache-Control: public, max-age=300`
 
 > `contributions` and `pinned` types require `GITHUB_TOKEN` to be set (GitHub GraphQL API restriction).
@@ -126,21 +119,4 @@ All configuration is via environment variables (or a `.env` file in the working 
 ```bash
 docker build -t git-banner-backend .
 docker run -p 8080:8080 -e GITHUB_TOKEN=ghp_... git-banner-backend
-```
-
-## Project Structure
-
-```
-.
-├── cmd/server/          — main entry point, graceful shutdown
-├── internal/
-│   ├── banner/          — SVG renderers (stats, contributions, pinned)
-│   ├── config/          — env-based configuration loader
-│   ├── github/          — GitHub REST + GraphQL client, in-memory cache
-│   ├── handler/         — HTTP handlers, input validation
-│   ├── middleware/       — logger, recovery, rate limiter, security headers
-│   └── server/          — HTTP server setup, route registration, middleware chain
-├── docs/openapi.yaml    — OpenAPI 3.0 spec
-├── Dockerfile           — multi-stage build (distroless final image ~15 MB)
-└── .env.example         — environment variable reference
 ```
